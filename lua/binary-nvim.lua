@@ -30,24 +30,48 @@ end
 -------------------------------------------------
 ---------------- clib functions -----------------
 -------------------------------------------------
+local arch_aliases = {
+    ["x86_64"] = "x64",
+    ["i386"] = "x86",
+    ["i686"] = "x86", -- x86 compat
+    ["aarch64"] = "arm64",
+    ["aarch64_be"] = "arm64",
+    ["armv8b"] = "arm64", -- arm64 compat
+    ["armv8l"] = "arm64", -- arm64 compat
+}
+
+local uname = vim.loop.os_uname()
+-- uname.machine will return the arch
+-- uname.sysname will return the os name
+local arch = arch_aliases[uname.machine] or uname.machine
+local os_name = uname.sysname
+
 function lib_exists(file)
     local f = io.open(file, "r")
     return f ~= nil and io.close(f)
 end
 
 local ffi = require("ffi")
-
 local script_path = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
-local linux_lib = script_path .. "./binary/build/libbinary.so"
+local lib = script_path .. "./binary/libbinary_linux_x64.so"
+if os_name == "Linux" then
+    if arch == "x64" then
+        lib = script_path .. "./binary/libbinary_linux_x64.so"
+    elseif arch == "x86" then
+        lib = script_path .. "./binary/libbinary_linux_x86.so"
+    end
+elseif os_name == "Windows" then
+    lib = script_path .. "./binary/libbinary_win_x64.dll"
+end
 
-print(lib_exists(linux_lib))
+assert(lib_exists(lib),"Library not found")
 
 ffi.cdef[[
         char* hex_to_bin(const char* hex);
         void free(void *ptr);
         ]]
 
-local lib = ffi.load(linux_lib)
+local lib = ffi.load(lib)
 
 function hex_to_bin(hex)
     local bin_c = lib.hex_to_bin(hex)
@@ -85,6 +109,7 @@ local function setup(opts)
             lines[1],
         }
         local cb = function(_, sel)
+            -- TODO: copy to a reg the value selected in the buffer.
             print("it works")
         end
         table.insert(tbl,hex_to_bin(lines[1]))
