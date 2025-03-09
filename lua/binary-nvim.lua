@@ -41,8 +41,6 @@ local arch_aliases = {
 }
 
 local uname = vim.loop.os_uname()
--- uname.machine will return the arch
--- uname.sysname will return the os name
 local arch = arch_aliases[uname.machine] or uname.machine
 local os_name = uname.sysname
 
@@ -81,17 +79,98 @@ function hex_to_bin(hex)
 end
 
 -------------------------------------------------
+---------------- plugin functions ---------------
+-------------------------------------------------
+function _hex_char_to_bin(hex)
+    local hex_to_bin_map = {
+        ['0'] = "0000 ", ['1'] = "0001 ", ['2'] = "0010 ", ['3'] = "0011 ",
+        ['4'] = "0100 ", ['5'] = "0101 ", ['6'] = "0110 ", ['7'] = "0111 ",
+        ['8'] = "1000 ", ['9'] = "1001 ", ['A'] = "1010 ", ['a'] = "1010 ",
+        ['B'] = "1011 ", ['b'] = "1011 ", ['C'] = "1100 ", ['c'] = "1100 ",
+        ['D'] = "1101 ", ['d'] = "1101 ", ['E'] = "1110 ", ['e'] = "1110 ",
+        ['F'] = "1111 ", ['f'] = "1111 "
+    }
+
+    return hex_to_bin_map[hex] or "INVALID_VALUE"
+end
+
+function _hex_char_to_dec(hex)
+    local hex_to_bin_map = {
+        ['0'] = 0,  ['1'] = 1,  ['2'] = 2,  ['3'] = 3,
+        ['4'] = 4,  ['5'] = 5,  ['6'] = 6,  ['7'] = 7,
+        ['8'] = 8,  ['9'] = 9,  ['A'] = 10, ['a'] = 10,
+        ['B'] = 11, ['b'] = 11, ['C'] = 12, ['c'] = 12,
+        ['D'] = 13, ['d'] = 13, ['E'] = 14, ['e'] = 14,
+        ['F'] = 15, ['f'] = 15
+    }
+
+    return hex_to_bin_map[hex] or "INVALID_VALUE"
+end
+
+-- Function to convert a hexadecimal string to its binary representation
+function _hex_to_bin(hex)
+    if hex == nil or #hex == 0 then
+        return "INVALID_VALUE"
+    end
+
+    -- Check if the string starts with "0x" or "0X" and remove it
+    if hex:sub(1, 2):lower() == "0x" then
+        hex = hex:sub(3) -- Discard the first two characters
+    end
+
+    local bin = {}
+
+    for i = 1, #hex do
+        local char = hex:sub(i, i)
+        local bin_value = _hex_char_to_bin(char)
+        if bin_value == "INVALID_VALUE" then
+            return "INVALID_VALUE"
+        end
+        table.insert(bin, bin_value)
+    end
+
+    return table.concat(bin)
+end
+
+function _hex_to_dec(hex)
+    if hex == nil or #hex == 0 then
+        return "INVALID_VALUE"
+    end
+
+    -- Check if the string starts with "0x" or "0X" and remove it
+    if hex:sub(1, 2):lower() == "0x" then
+        hex = hex:sub(3) -- Discard the first two characters
+    end
+
+    local dec = {}
+    local decimal = 0
+
+    for i = 1, #hex do
+        local char = hex:sub(i, i)
+        local dec_value = _hex_char_to_dec(char)
+        if dec_value == "INVALID_VALUE" then
+            return "INVALID_VALUE"
+        end
+
+        -- Calculate the positional value using bit shifts
+        local position = #hex - i -- Position from the right (0-based)
+        decimal = decimal + dec_value * (16 ^ position) -- Multiply by 16^position
+    end
+
+    table.insert(dec, decimal)
+    return table.concat(dec)
+end
+-------------------------------------------------
 ---------------- plugin setup -------------------
 -------------------------------------------------
 local function setup(opts)
     opts = opts or {}
 
-        
     vim.keymap.set("v", "<Leader>b", function()
 
         -- Get text selected in visual mode
-        local start_pos = vim.fn.getpos("v") -- Inicio de la selección
-        local end_pos = vim.fn.getpos(".")   -- Fin de la selección
+        local start_pos = vim.fn.getpos("v")
+        local end_pos = vim.fn.getpos(".")
 
         local start_line = start_pos[2] - 1
         local start_col = start_pos[3] - 1
@@ -112,7 +191,11 @@ local function setup(opts)
             -- TODO: copy to a reg the value selected in the buffer.
             print("it works")
         end
-        table.insert(tbl,hex_to_bin(lines[1]))
+-- 0xff
+        if lines[1]:sub(1, 2):lower() == "0x" then -- Hexadecimal value
+            table.insert(tbl,_hex_to_bin(lines[1]))
+            table.insert(tbl,_hex_to_dec(lines[1]))
+        end
         show_popup(tbl, cb)
 
         -- Send esc to leave visual mode
