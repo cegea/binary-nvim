@@ -1,3 +1,4 @@
+#include "binary.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,18 +21,25 @@ const char* hex_char_to_bin(char hex) {
         case 'D': case 'd': return "1101";
         case 'E': case 'e': return "1110";
         case 'F': case 'f': return "1111";
-        default: return ""; // Retorna vacío si no es hexadecimal válido
+        default: return INVALID_VALUE; 
     }
 }
 
 char* hex_to_bin(const char* hex) {
     size_t len = strlen(hex);
-    char* bin = (char*)malloc(len * 4 + 1); // Cada carácter hexadecimal se traduce a 4 bits
-    bin[0] = '\0'; // Inicializa la cadena binaria vacía
+    char* bin = (char*)malloc(len * 4 + 1);
+    bin[0] = '\0';
 
-    for (size_t i = 0; i < len; i++) {
-        strcat(bin, hex_char_to_bin(hex[i])); // Concatena la conversión de cada carácter
+    if (len == 0) {
+        strcat(bin, INVALID_VALUE);
     }
 
-    return bin; // Devuelve la cadena binaria
+    for (size_t i = 0; i < len; i++) {
+        //if (strcmp(hex_char_to_bin(hex[i]), INVALID_VALUE)) {
+        //    return str;
+        //}
+        strcat(bin, hex_char_to_bin(hex[i]));
+    }
+
+    return bin;
 }
