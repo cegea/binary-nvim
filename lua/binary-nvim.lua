@@ -193,7 +193,7 @@ local function setup(opts)
         }
         local cb = function(_, sel)
             if sel ~= nil and #sel > 0 then
-                vim.fn.setreg('"', table.concat(sel, "\n"))
+                vim.fn.setreg('"', sel)
             end
         end
 -- 0xff
