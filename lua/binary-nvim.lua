@@ -192,8 +192,9 @@ local function setup(opts)
             lines[1],
         }
         local cb = function(_, sel)
-            -- TODO: copy to a reg the value selected in the buffer.
-            print("it works")
+            if sel ~= nil and #sel > 0 then
+                vim.fn.setreg('"', table.concat(sel, "\n"))
+            end
         end
 -- 0xff
         if lines[1]:sub(1, 2):lower() == "0x" then -- Hexadecimal value
