@@ -30,6 +30,8 @@ end
 -------------------------------------------------
 ---------------- clib functions -----------------
 -------------------------------------------------
+local enable_clib_functions = false
+
 local arch_aliases = {
     ["x86_64"] = "x64",
     ["i386"] = "x86",
@@ -40,42 +42,44 @@ local arch_aliases = {
     ["armv8l"] = "arm64", -- arm64 compat
 }
 
-local uname = vim.loop.os_uname()
-local arch = arch_aliases[uname.machine] or uname.machine
-local os_name = uname.sysname
+if enable_clib_functions then
+    local uname = vim.loop.os_uname()
+    local arch = arch_aliases[uname.machine] or uname.machine
+    local os_name = uname.sysname
 
-function lib_exists(file)
-    local f = io.open(file, "r")
-    return f ~= nil and io.close(f)
-end
-
-local ffi = require("ffi")
-local script_path = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
-local lib = script_path .. "./binary/libbinary_linux_x64.so"
-if os_name == "Linux" then
-    if arch == "x64" then
-        lib = script_path .. "./binary/libbinary_linux_x64.so"
-    elseif arch == "x86" then
-        lib = script_path .. "./binary/libbinary_linux_x86.so"
+    function lib_exists(file)
+        local f = io.open(file, "r")
+        return f ~= nil and io.close(f)
     end
-elseif os_name == "Windows" then
-    lib = script_path .. "./binary/libbinary_win_x64.dll"
-end
 
-assert(lib_exists(lib),"Library not found")
+    local ffi = require("ffi")
+    local script_path = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
+    local lib = ""
+    if os_name == "Linux" then
+        if arch == "x64" then
+            lib = script_path .. "./binary/libbinary_linux_x64.so"
+        elseif arch == "x86" then
+            lib = script_path .. "./binary/libbinary_linux_x86.so"
+        end
+    elseif os_name == "Windows" then
+        lib = script_path .. "./binary/libbinary_win_x64.dll"
+    end
 
-ffi.cdef[[
+    assert(lib_exists(lib),"Library not found")
+
+    ffi.cdef[[
         char* hex_to_bin(const char* hex);
         void free(void *ptr);
         ]]
 
-local lib = ffi.load(lib)
+    local lib = ffi.load(lib)
 
-function hex_to_bin(hex)
-    local bin_c = lib.hex_to_bin(hex)
-    local bin = ffi.string(bin_c)
-    ffi.C.free(bin_c)
-    return bin
+    function hex_to_bin(hex)
+        local bin_c = lib.hex_to_bin(hex)
+        local bin = ffi.string(bin_c)
+        ffi.C.free(bin_c)
+        return bin
+    end
 end
 
 -------------------------------------------------
