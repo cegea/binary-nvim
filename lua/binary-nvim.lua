@@ -1,10 +1,11 @@
+local M = {}
 -------------------------------------------------
 ---------------- popup functions ----------------
 -------------------------------------------------
-local popup = require("plenary.popup")
 local Win_id
 
 function show_popup(opts, cb)
+    local popup = require("plenary.popup")
     local height = 10
     local width = 20
     local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
@@ -62,6 +63,12 @@ function _hex_to_bin(hex)
         return "INVALID_VALUE"
     end
 
+    for _,v in pairs(hex) do
+       if vim.fn.str2nr(v) > 9 then
+            
+        end 
+    end
+
     -- Check if the string starts with "0x" or "0X" and remove it
     if hex:sub(1, 2):lower() == "0x" then
         hex = hex:sub(3) -- Discard the first two characters
@@ -109,10 +116,40 @@ function _hex_to_dec(hex)
     table.insert(dec, decimal)
     return table.concat(dec)
 end
+
+M.get_number = function(block)
+
+    local binary_flag = true
+    local digit = 0
+
+    if block == nil or #block == 0 then
+        return "INVALID_VALUE"
+    end
+
+    if block:sub(1, 2):lower() == "0x" then
+        return vim.fn.str2nr(block, 16)
+    else
+        for _,v in pairs(block) do
+            digit = vim.fn.str2nr(v)
+            if digit > 9 then
+                return vim.fn.str2nr(block, 16)
+            elseif digit > 1 then
+                binary_flag = false
+            end 
+        end
+    end
+
+    if binary_flag then
+        return vim.fn.str2nr(block, 2)
+    else
+        return vim.fn.str2nr(block, 10)
+    end
+end
+
 -------------------------------------------------
 ---------------- plugin setup -------------------
 -------------------------------------------------
-local function setup(opts)
+M.setup = function(opts)
     opts = opts or {}
 
     vim.keymap.set("v", "<Leader>b", function()
@@ -154,5 +191,5 @@ local function setup(opts)
     end)
 end
 
-return {setup = setup}
+return M
 
